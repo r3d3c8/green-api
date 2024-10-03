@@ -3,6 +3,7 @@ import {
     GetSettingsParams, GetSettingsResponse, GetStateInstanceParams, GetStateInstanceResponse,
     SendFileByUrlParams, SendFileByUrlResponse, SendMessageParams, SendMessageResponse
 } from "./green-api-messages";
+import {getStatusText} from "./utils";
 
 export const instance = axios.create({
     baseURL: '/proxy',
@@ -24,7 +25,7 @@ export class GreenApiError extends Error {
     constructor(code: number, statusText: string, body: unknown) {
         super(`GreenApi error: ${code}(${statusText})`)
         this.code = code
-        this.statusText = statusText
+        this.statusText = statusText || getStatusText(code)
         this.body = body
     }
 }
