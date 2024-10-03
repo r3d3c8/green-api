@@ -13,6 +13,8 @@ import (
 
 var requestId atomic.Int32
 
+const OwnStatusInternalServerError = 599
+
 func createProxyHandlerToGreenApi(
 	greenApiBaseUrl string,
 ) echo.HandlerFunc {
@@ -27,26 +29,22 @@ func createProxyHandlerToGreenApi(
 
 		log.Debug(fmt.Sprintf("proxy request (%d) to url %s", id, greenApiUrl))
 
-		var greenResp *http.Response
-		var err error
-
-		if c.Request().Method == http.MethodGet {
-			greenResp, err = http.Get(greenApiUrl)
-		} else if c.Request().Method == http.MethodPost {
-			greenResp, err = http.Post(greenApiUrl, c.Request().Header.Get("Content-Type"), c.Request().Body)
-		} else {
-			log.Debug(fmt.Sprintf("proxy request (%d): unknown method", id))
-			return c.String(http.StatusBadRequest, "unknown method")
+		greenReq, err := http.NewRequestWithContext(
+			c.Request().Context(),
+			c.Request().Method,
+			greenApiUrl,
+			c.Request().Body,
+		)
+		if err != nil {
+			log.Debug(fmt.Errorf("proxy request (%d): prepare error: %w", id, err))
+			return c.String(OwnStatusInternalServerError, "request to remote service prepare error")
 		}
+		greenReq.Header.Set("Content-Type", c.Request().Header.Get("Content-Type"))
 
+		greenResp, err := http.DefaultClient.Do(greenReq)
 		if err != nil {
 			log.Debug(fmt.Errorf("proxy request (%d): failed: %w", id, err))
-			return c.String(http.StatusInternalServerError, "request to remote service failed")
-		}
-
-		if greenResp.StatusCode != http.StatusOK {
-			log.Debug(fmt.Errorf("proxy request (%d): failed: status=%d(%s)", id, greenResp.StatusCode, greenResp.Status))
-			return c.String(greenResp.StatusCode, "request to remote service failed")
+			return c.String(OwnStatusInternalServerError, "request to remote service failed")
 		}
 
 		defer func() {
@@ -54,7 +52,7 @@ func createProxyHandlerToGreenApi(
 		}()
 
 		log.Debug(fmt.Sprintf("proxy request (%d): ok, connecting stream", id))
-		return c.Stream(http.StatusOK, greenResp.Header.Get("Content-Type"), greenResp.Body)
+		return c.Stream(greenResp.StatusCode, greenResp.Header.Get("Content-Type"), greenResp.Body)
 	}
 }
 

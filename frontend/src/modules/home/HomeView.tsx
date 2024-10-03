@@ -4,7 +4,7 @@ import AppTwoColumnLayout from "../common/components/AppTwoColumnLayout";
 import {AppInlineInput} from "../common/components/AppInput";
 import AppTextArea, {AppInlineTextArea} from "../common/components/AppTextArea";
 import AppSpacer from "../common/components/AppSpacer";
-import GreenApiService from "../../api/green-api";
+import GreenApiService, {GreenApiError} from "../../api/green-api";
 import {showToast, ToastType} from "../common/components/AppToaster";
 import {phoneToChatId} from "../../api/green-api-messages";
 
@@ -30,15 +30,6 @@ const extractFileName = (urlStr: string): string => {
     }
 }
 
-const withToastOnError = (block: () => Promise<unknown>) => {
-    return async () => {
-        try {
-            await block()
-        } catch (e) {
-            showToast(`oops... (${e})`, ToastType.Danger, 3000)
-        }
-    }
-}
 
 const HomeView = () => {
 
@@ -59,6 +50,23 @@ const HomeView = () => {
     const setPrettyAnswer = (resp: unknown) => {
         const prettyAnswer = JSON.stringify(resp, undefined, 4)
         setAnswer(prettyAnswer)
+    }
+
+    const withToastOnError = (block: () => Promise<unknown>) => {
+        return async () => {
+            try {
+                await block()
+            } catch (e) {
+                if (e instanceof GreenApiError) {
+                    if (typeof e.body === "string") {
+                        setAnswer(e.body)
+                    } else {
+                        setPrettyAnswer(e.body)
+                    }
+                }
+                showToast(`oops... ${e}`, ToastType.Danger, 3000)
+            }
+        }
     }
 
     const getSettingsClickHandler = withToastOnError(async () => {
@@ -85,7 +93,7 @@ const HomeView = () => {
                 idInstance: idInstance,
                 apiTokenInstance: apiTokenInstance,
                 body: {
-                    chatId: phoneToChatId(messagePhone),
+                    chatId: phoneToChatId(filePhone),
                     urlFile: fileUrl,
                     fileName: extractFileName(fileUrl)
                 }

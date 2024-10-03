@@ -15,21 +15,55 @@ const Endpoint = Object.freeze({
     sendFileByUrl: "sendFileByUrl",
 })
 
+export class GreenApiError extends Error {
+
+    code: number
+    statusText: string
+    body: unknown
+
+    constructor(code: number, statusText: string, body: unknown) {
+        super(`GreenApi error: ${code}(${statusText})`)
+        this.code = code
+        this.statusText = statusText
+        this.body = body
+    }
+}
+
+const OwnStatusInternalServerError = 599
+
 const GreenApiService = {
 
     getUrl(endpoint: string, idInstance: string, apiTokenInstance: string): string {
         return `/waInstance${idInstance}/${endpoint}/${apiTokenInstance}`
     },
 
+    async processErrors(block: () => Promise<any>) {
+        try {
+            return await block()
+        } catch (e) {
+            if (e instanceof axios.AxiosError) {
+                if (e.response && e.response.status !== OwnStatusInternalServerError) {
+                    throw new GreenApiError(e.response.status, e.response.statusText, e.response.data)
+                }
+            }
+            throw e
+        }
+    },
+
+
     async GET(endpoint: string, idInstance: string, apiTokenInstance: string) {
-        return (await instance.get(this.getUrl(endpoint, idInstance, apiTokenInstance))).data
+        return this.processErrors(async () => {
+            return (await instance.get(this.getUrl(endpoint, idInstance, apiTokenInstance))).data
+        })
     },
 
     async POST(endpoint: string, idInstance: string, apiTokenInstance: string, body: object) {
-        return (await instance.post(
-            this.getUrl(endpoint, idInstance, apiTokenInstance),
-            {...body, idInstance: undefined, apiTokenInstance: undefined}
-        )).data
+        return this.processErrors(async () => {
+            return (await instance.post(
+                this.getUrl(endpoint, idInstance, apiTokenInstance),
+                {...body, idInstance: undefined, apiTokenInstance: undefined}
+            )).data
+        })
     },
 
     async getSettings(params: GetSettingsParams): Promise<GetSettingsResponse> {

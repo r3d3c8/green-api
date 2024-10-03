@@ -20,7 +20,7 @@ git clone https://github.com/r3d3c8/green-api.git
 cd green-api/docker
 ```
 
-- скопировать app.env.template в app.env и указать правильные значения
+- скопировать app.env.template в app.env и указать правильные значения (см. Опции)
 ```bash
 cp app.env.template app.env
 nano app.env
