@@ -23,9 +23,10 @@ export class GreenApiError extends Error {
     body: unknown
 
     constructor(code: number, statusText: string, body: unknown) {
-        super(`GreenApi error: ${code}(${statusText})`)
+        const actualStatusText = statusText || getStatusText(code)
+        super(`GreenApi error: ${code}(${actualStatusText})`)
         this.code = code
-        this.statusText = statusText || getStatusText(code)
+        this.statusText = actualStatusText
         this.body = body
     }
 }
