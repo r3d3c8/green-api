@@ -63,7 +63,7 @@ const GreenApiService = {
         return this.processErrors(async () => {
             return (await instance.post(
                 this.getUrl(endpoint, idInstance, apiTokenInstance),
-                {...body, idInstance: undefined, apiTokenInstance: undefined}
+                body
             )).data
         })
     },
