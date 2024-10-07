@@ -12,7 +12,7 @@ import {phoneToChatId} from "../../api/green-api-messages";
 const defaultIdInstance = import.meta.env.VITE_DEFAULT_ID_INSTANCE || ''
 const defaultApiTokenInstance = import.meta.env.VITE_DEFAULT_API_TOKEN_INSTANCE || ''
 
-const filenamePattern = /^[a-zA-Z0-9_\s]{1,100}\.[a-zA-Z0-9_\s]{1,15}$/
+const filenamePattern = /^[-a-zA-Z0-9_\s]{1,100}\.[a-zA-Z0-9_\s]{1,15}$/
 const defaultFileName = "file.bin"
 
 const extractFileName = (urlStr: string): string => {
